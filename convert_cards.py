@@ -2,6 +2,7 @@ import os
 import sys
 import re
 import shutil
+import argparse
 from glob import glob
 from os.path import basename, join, exists
 from typing import Optional, Dict, List
@@ -214,22 +215,34 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
             print(f"[ERROR] Failed to process {filename}: {e}")
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python convert_cards.py <input_folder_path> [output_folder_path] [backup_folder_path] [preview_folder_path]")
+    parser = argparse.ArgumentParser(description="Convert card images to Master Duel Unity assets.")
+    parser.add_argument("input_dir", help="Directory containing input images")
+    parser.add_argument("-o", "--output", default="modded_assets", help="Directory to save modded assets (default: modded_assets)")
+    parser.add_argument("-b", "--backup", help="Directory to save backups of original assets")
+    parser.add_argument("-p", "--preview", help="Directory to save side-by-side preview images")
+
+    if len(sys.argv) == 1:
+        parser.print_help(sys.stderr)
         sys.exit(1)
 
-    input_dir = sys.argv[1]
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else "modded_assets"
-    backup_dir = sys.argv[3] if len(sys.argv) > 3 else None
-    preview_dir = sys.argv[4] if len(sys.argv) > 4 else None
+    args = parser.parse_args()
 
-    if not os.path.exists(input_dir):
-        print(f"Input directory does not exist: {input_dir}")
+    if not os.path.exists(args.input_dir):
+        print(f"Input directory does not exist: {args.input_dir}")
         sys.exit(1)
 
     if not APP_CONFIG or not APP_CONFIG.game_path:
         print("Error: Game path not configured in database.")
         sys.exit(1)
 
-    process_card_conversion(input_dir, output_dir, backup_dir, preview_dir)
+    print(f"Starting conversion...")
+    print(f"Input: {args.input_dir}")
+    print(f"Output: {args.output}")
+    if args.backup:
+        print(f"Backup: {args.backup}")
+    if args.preview:
+        print(f"Preview: {args.preview}")
+    print(f"Game Data Source: {APP_CONFIG.game_path}")
+
+    process_card_conversion(args.input_dir, args.output, args.backup, args.preview)
     print("Done.")
