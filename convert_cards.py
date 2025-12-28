@@ -83,7 +83,7 @@ def resolve_card(filename_no_ext: str, card_map: Dict[str, List[CardModel]]) -> 
 
 # --- Main Logic ---
 
-def process_card_conversion(input_folder: str, output_folder: str, backup_folder: Optional[str] = None, preview_folder: Optional[str] = None, compress_preview: bool = False, reference_folder: Optional[str] = None):
+def process_card_conversion(input_folder: str, output_folder: str, backup_folder: Optional[str] = None, preview_folder: Optional[str] = None, compress_format: Optional[str] = None, reference_folder: Optional[str] = None):
     """
     Scans input_folder, resolves card names (handling sanitization/collisions),
     and generates modded Unity assets.
@@ -254,28 +254,36 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
                         comparison.paste(org_resized, (0, 0))
                         comparison.paste(new_resized, (512, 0))
 
-                        # Optional Compression (PNG8)
-                        if compress_preview:
+                        # Compression Logic
+                        ext = ".png"
+                        save_kwargs = {}
+                        
+                        if compress_format == 'png':
                             # Quantize to 256 colors (P mode) which saves as 8-bit PNG
                             comparison = comparison.quantize(colors=256, method=2, dither=1)
+                        elif compress_format == 'jpg':
+                            # Convert to RGB (jpeg doesn't support alpha)
+                            comparison = comparison.convert("RGB")
+                            ext = ".jpg"
+                            save_kwargs = {"quality": 95}
                         
-                        preview_filename = bundle_name + ".png"
+                        preview_filename = bundle_name + ext
                         preview_path = join(preview_target_dir, preview_filename)
                         
                         if exists(preview_path):
                             print(f"[WARNING] Overwriting existing preview: {preview_path}")
                         
-                        comparison.save(preview_path)
+                        comparison.save(preview_path, **save_kwargs)
                         print(f"[PREVIEW] Saved comparison to {preview_path}")
 
                         # Save Flattened Copy
-                        flat_preview_filename = name_without_ext + ".png"
+                        flat_preview_filename = name_without_ext + ext
                         flat_preview_path = join(preview_folder, flat_preview_filename)
 
                         if exists(flat_preview_path):
                             print(f"[WARNING] Overwriting existing flattened preview: {flat_preview_path}")
 
-                        comparison.save(flat_preview_path)
+                        comparison.save(flat_preview_path, **save_kwargs)
                         print(f"[PREVIEW] Saved flattened copy to {flat_preview_path}")
                         
                     except Exception as pe:
@@ -294,7 +302,7 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--backup", help="Directory to save backups of original assets")
     parser.add_argument("-p", "--preview", help="Directory to save side-by-side preview images")
     parser.add_argument("-r", "--reference", help="Directory containing reference (original) card art")
-    parser.add_argument("--compress-preview", action="store_true", help="Compress preview images using PNG8 (256 colors)")
+    parser.add_argument("--compress-preview", choices=['png', 'jpg'], type=str.lower, help="Compress preview images: 'png' (PNG8) or 'jpg' (75%% quality)")
 
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
@@ -318,7 +326,7 @@ if __name__ == "__main__":
     if args.preview:
         print(f"Preview: {args.preview}")
         if args.compress_preview:
-            print("Preview Compression: Enabled (PNG8)")
+            print(f"Preview Compression: Enabled ({args.compress_preview.upper()})")
     print(f"Game Data Source: {APP_CONFIG.game_path}")
 
     process_card_conversion(args.input_dir, args.output, args.backup, args.preview, args.compress_preview, args.reference)
