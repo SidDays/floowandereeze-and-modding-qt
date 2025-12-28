@@ -82,7 +82,7 @@ def resolve_card(filename_no_ext: str, card_map: Dict[str, List[CardModel]]) -> 
 
 # --- Main Logic ---
 
-def process_card_conversion(input_folder: str, output_folder: str, backup_folder: Optional[str] = None):
+def process_card_conversion(input_folder: str, output_folder: str, backup_folder: Optional[str] = None, preview_folder: Optional[str] = None):
     """
     Scans input_folder, resolves card names (handling sanitization/collisions),
     and generates modded Unity assets.
@@ -92,6 +92,9 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
     
     if backup_folder and not os.path.exists(backup_folder):
         os.makedirs(backup_folder)
+        
+    if preview_folder and not os.path.exists(preview_folder):
+        os.makedirs(preview_folder)
 
     # 1. Load Database
     card_map = load_card_database()
@@ -145,11 +148,16 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
             env = unity_load(original_bundle_path)
             user_image = Image.open(img_path).convert("RGBA")
             modified = False
+            original_image_copy = None
             
             for obj in env.objects:
                 if obj.type.name == "Texture2D":
                     data = obj.read()
                     
+                    # Capture original image for preview before modification
+                    if preview_folder:
+                        original_image_copy = data.image.copy()
+
                     data.m_Width, data.m_Height = user_image.size
                     data.set_image(
                         img=user_image,
@@ -161,6 +169,7 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
                     break 
             
             if modified:
+                # Save Unity Asset
                 target_dir = join(output_folder, "0000", bundle_subfolder)
                 if not exists(target_dir):
                     os.makedirs(target_dir)
@@ -170,6 +179,34 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
                 with open(target_path, "wb") as f:
                     f.write(env.file.save(packer=APP_CONFIG.packer))
                 print(f"[SUCCESS] Saved to {target_path}")
+
+                # Save Preview Image
+                if preview_folder and original_image_copy:
+                    try:
+                        # Prepare Preview Directory
+                        preview_target_dir = join(preview_folder, "0000", bundle_subfolder)
+                        if not exists(preview_target_dir):
+                            os.makedirs(preview_target_dir)
+                            
+                        # Create Side-by-Side (1024x512)
+                        # Left: Original, Right: New
+                        comparison = Image.new('RGBA', (1024, 512))
+                        
+                        # Resize images to 512x512 to fit
+                        org_resized = original_image_copy.resize((512, 512), Image.Resampling.LANCZOS)
+                        new_resized = user_image.resize((512, 512), Image.Resampling.LANCZOS)
+                        
+                        comparison.paste(org_resized, (0, 0))
+                        comparison.paste(new_resized, (512, 0))
+                        
+                        preview_filename = bundle_name + ".png"
+                        preview_path = join(preview_target_dir, preview_filename)
+                        comparison.save(preview_path)
+                        print(f"[PREVIEW] Saved comparison to {preview_path}")
+                        
+                    except Exception as pe:
+                        print(f"[ERROR] Failed to generate preview for {bundle_name}: {pe}")
+
             else:
                  print(f"[WARNING] No Texture2D found in bundle {bundle_name}")
 
@@ -178,12 +215,13 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python convert_cards.py <input_folder_path> [output_folder_path] [backup_folder_path]")
+        print("Usage: python convert_cards.py <input_folder_path> [output_folder_path] [backup_folder_path] [preview_folder_path]")
         sys.exit(1)
 
     input_dir = sys.argv[1]
     output_dir = sys.argv[2] if len(sys.argv) > 2 else "modded_assets"
     backup_dir = sys.argv[3] if len(sys.argv) > 3 else None
+    preview_dir = sys.argv[4] if len(sys.argv) > 4 else None
 
     if not os.path.exists(input_dir):
         print(f"Input directory does not exist: {input_dir}")
@@ -193,5 +231,5 @@ if __name__ == "__main__":
         print("Error: Game path not configured in database.")
         sys.exit(1)
 
-    process_card_conversion(input_dir, output_dir, backup_dir)
+    process_card_conversion(input_dir, output_dir, backup_dir, preview_dir)
     print("Done.")
