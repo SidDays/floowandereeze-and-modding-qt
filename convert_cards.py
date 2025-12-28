@@ -140,6 +140,8 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
             
             backup_target_path = join(backup_target_dir, bundle_name)
             try:
+                if exists(backup_target_path):
+                    print(f"[WARNING] Overwriting existing backup: {backup_target_path}")
                 shutil.copy2(original_bundle_path, backup_target_path)
                 print(f"[BACKUP] Saved original to {backup_target_path}")
             except Exception as e:
@@ -177,6 +179,9 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
                 
                 target_path = join(target_dir, bundle_name)
                 
+                if exists(target_path):
+                    print(f"[WARNING] Overwriting existing asset: {target_path}")
+
                 with open(target_path, "wb") as f:
                     f.write(env.file.save(packer=APP_CONFIG.packer))
                 print(f"[SUCCESS] Saved to {target_path}")
@@ -207,12 +212,20 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
                         
                         preview_filename = bundle_name + ".png"
                         preview_path = join(preview_target_dir, preview_filename)
+                        
+                        if exists(preview_path):
+                            print(f"[WARNING] Overwriting existing preview: {preview_path}")
+                        
                         comparison.save(preview_path)
                         print(f"[PREVIEW] Saved comparison to {preview_path}")
 
                         # Save Flattened Copy
                         flat_preview_filename = name_without_ext + ".png"
                         flat_preview_path = join(preview_folder, flat_preview_filename)
+
+                        if exists(flat_preview_path):
+                            print(f"[WARNING] Overwriting existing flattened preview: {flat_preview_path}")
+
                         comparison.save(flat_preview_path)
                         print(f"[PREVIEW] Saved flattened copy to {flat_preview_path}")
                         
