@@ -204,6 +204,12 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
                         preview_path = join(preview_target_dir, preview_filename)
                         comparison.save(preview_path)
                         print(f"[PREVIEW] Saved comparison to {preview_path}")
+
+                        # Save Flattened Copy
+                        flat_preview_filename = name_without_ext + ".png"
+                        flat_preview_path = join(preview_folder, flat_preview_filename)
+                        comparison.save(flat_preview_path)
+                        print(f"[PREVIEW] Saved flattened copy to {flat_preview_path}")
                         
                     except Exception as pe:
                         print(f"[ERROR] Failed to generate preview for {bundle_name}: {pe}")
