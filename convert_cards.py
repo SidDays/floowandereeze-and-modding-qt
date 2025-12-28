@@ -186,6 +186,12 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
         try:
             env = unity_load(original_bundle_path)
             user_image = Image.open(img_path).convert("RGBA")
+            
+            # Resize if larger than 512x512
+            if user_image.width > 512 or user_image.height > 512:
+                user_image = user_image.resize((512, 512), Image.Resampling.LANCZOS)
+                print(f"[RESIZE] Resized {filename} to 512x512")
+
             modified = False
             original_image_copy = None
             
