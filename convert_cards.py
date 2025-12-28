@@ -83,7 +83,7 @@ def resolve_card(filename_no_ext: str, card_map: Dict[str, List[CardModel]]) -> 
 
 # --- Main Logic ---
 
-def process_card_conversion(input_folder: str, output_folder: str, backup_folder: Optional[str] = None, preview_folder: Optional[str] = None):
+def process_card_conversion(input_folder: str, output_folder: str, backup_folder: Optional[str] = None, preview_folder: Optional[str] = None, compress_preview: bool = False):
     """
     Scans input_folder, resolves card names (handling sanitization/collisions),
     and generates modded Unity assets.
@@ -199,6 +199,11 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
                         
                         comparison.paste(org_resized, (0, 0))
                         comparison.paste(new_resized, (512, 0))
+
+                        # Optional Compression (PNG8)
+                        if compress_preview:
+                            # Quantize to 256 colors (P mode) which saves as 8-bit PNG
+                            comparison = comparison.quantize(colors=256, method=2, dither=1)
                         
                         preview_filename = bundle_name + ".png"
                         preview_path = join(preview_target_dir, preview_filename)
@@ -226,6 +231,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", default="modded_assets", help="Directory to save modded assets (default: modded_assets)")
     parser.add_argument("-b", "--backup", help="Directory to save backups of original assets")
     parser.add_argument("-p", "--preview", help="Directory to save side-by-side preview images")
+    parser.add_argument("--compress-preview", action="store_true", help="Compress preview images using PNG8 (256 colors)")
 
     if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
@@ -248,7 +254,9 @@ if __name__ == "__main__":
         print(f"Backup: {args.backup}")
     if args.preview:
         print(f"Preview: {args.preview}")
+        if args.compress_preview:
+            print("Preview Compression: Enabled (PNG8)")
     print(f"Game Data Source: {APP_CONFIG.game_path}")
 
-    process_card_conversion(args.input_dir, args.output, args.backup, args.preview)
+    process_card_conversion(args.input_dir, args.output, args.backup, args.preview, args.compress_preview)
     print("Done.")
