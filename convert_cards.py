@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+import shutil
 from glob import glob
 from os.path import basename, join, exists
 from typing import Optional, Dict, List
@@ -81,13 +82,16 @@ def resolve_card(filename_no_ext: str, card_map: Dict[str, List[CardModel]]) -> 
 
 # --- Main Logic ---
 
-def process_card_conversion(input_folder: str, output_folder: str):
+def process_card_conversion(input_folder: str, output_folder: str, backup_folder: Optional[str] = None):
     """
     Scans input_folder, resolves card names (handling sanitization/collisions),
     and generates modded Unity assets.
     """
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
+    
+    if backup_folder and not os.path.exists(backup_folder):
+        os.makedirs(backup_folder)
 
     # 1. Load Database
     card_map = load_card_database()
@@ -123,6 +127,19 @@ def process_card_conversion(input_folder: str, output_folder: str):
         if not exists(original_bundle_path):
             print(f"[ERROR] Bundle file not found in game data: {original_bundle_path}")
             continue
+
+        # Backup Logic
+        if backup_folder:
+            backup_target_dir = join(backup_folder, "0000", bundle_subfolder)
+            if not exists(backup_target_dir):
+                os.makedirs(backup_target_dir)
+            
+            backup_target_path = join(backup_target_dir, bundle_name)
+            try:
+                shutil.copy2(original_bundle_path, backup_target_path)
+                print(f"[BACKUP] Saved original to {backup_target_path}")
+            except Exception as e:
+                print(f"[ERROR] Failed to backup {bundle_name}: {e}")
 
         try:
             env = unity_load(original_bundle_path)
@@ -161,11 +178,12 @@ def process_card_conversion(input_folder: str, output_folder: str):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python convert_cards.py <input_folder_path> [output_folder_path]")
+        print("Usage: python convert_cards.py <input_folder_path> [output_folder_path] [backup_folder_path]")
         sys.exit(1)
 
     input_dir = sys.argv[1]
     output_dir = sys.argv[2] if len(sys.argv) > 2 else "modded_assets"
+    backup_dir = sys.argv[3] if len(sys.argv) > 3 else None
 
     if not os.path.exists(input_dir):
         print(f"Input directory does not exist: {input_dir}")
@@ -175,5 +193,5 @@ if __name__ == "__main__":
         print("Error: Game path not configured in database.")
         sys.exit(1)
 
-    process_card_conversion(input_dir, output_dir)
+    process_card_conversion(input_dir, output_dir, backup_dir)
     print("Done.")
