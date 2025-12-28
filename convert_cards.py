@@ -83,7 +83,7 @@ def resolve_card(filename_no_ext: str, card_map: Dict[str, List[CardModel]]) -> 
 
 # --- Main Logic ---
 
-def process_card_conversion(input_folder: str, output_folder: str, backup_folder: Optional[str] = None, preview_folder: Optional[str] = None, compress_preview: bool = False):
+def process_card_conversion(input_folder: str, output_folder: str, backup_folder: Optional[str] = None, preview_folder: Optional[str] = None, compress_preview: bool = False, reference_folder: Optional[str] = None):
     """
     Scans input_folder, resolves card names (handling sanitization/collisions),
     and generates modded Unity assets.
@@ -132,18 +132,54 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
             print(f"[ERROR] Bundle file not found in game data: {original_bundle_path}")
             continue
 
-        # Backup Logic
+        # Reference Logic Setup
+        reference_image = None
+        if reference_folder:
+            if not exists(reference_folder):
+                os.makedirs(reference_folder)
+            
+            # Use sanitized card name for reference file -> Reference/CardName.png
+            ref_path = join(reference_folder, f"{card_name}.png")
+            if exists(ref_path):
+                try:
+                    reference_image = Image.open(ref_path).convert("RGBA")
+                    print(f"[REFERENCE] Found existing reference: {ref_path}")
+                except Exception as e:
+                    print(f"[ERROR] Failed to load reference {ref_path}: {e}")
+
+        # Backup Logic (Modified for Reference)
         if backup_folder:
             backup_target_dir = join(backup_folder, "0000", bundle_subfolder)
             if not exists(backup_target_dir):
                 os.makedirs(backup_target_dir)
             
             backup_target_path = join(backup_target_dir, bundle_name)
+            
+            if exists(backup_target_path):
+                print(f"[WARNING] Overwriting existing backup: {backup_target_path}")
+
             try:
-                if exists(backup_target_path):
-                    print(f"[WARNING] Overwriting existing backup: {backup_target_path}")
-                shutil.copy2(original_bundle_path, backup_target_path)
-                print(f"[BACKUP] Saved original to {backup_target_path}")
+                # If we have a reference image, we INJECT it into the backup to ensure it's clean
+                if reference_image:
+                    env_backup = unity_load(original_bundle_path)
+                    for obj in env_backup.objects:
+                        if obj.type.name == "Texture2D":
+                            data = obj.read()
+                            data.m_Width, data.m_Height = reference_image.size
+                            data.set_image(
+                                img=reference_image,
+                                target_format=TextureFormat.RGBA32,
+                                mipmap_count=APP_CONFIG.mipmap_count
+                            )
+                            data.save()
+                            break
+                    with open(backup_target_path, "wb") as f:
+                        f.write(env_backup.file.save(packer=APP_CONFIG.packer))
+                    print(f"[BACKUP] Created clean backup from reference: {backup_target_path}")
+                else:
+                    # Otherwise just copy the game file
+                    shutil.copy2(original_bundle_path, backup_target_path)
+                    print(f"[BACKUP] Saved original to {backup_target_path}")
             except Exception as e:
                 print(f"[ERROR] Failed to backup {bundle_name}: {e}")
 
@@ -153,13 +189,26 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
             modified = False
             original_image_copy = None
             
+            # If we already loaded a reference image, use that as the "original" for previews
+            if reference_image:
+                original_image_copy = reference_image.copy()
+
             for obj in env.objects:
                 if obj.type.name == "Texture2D":
                     data = obj.read()
                     
-                    # Capture original image for preview before modification
-                    if preview_folder:
+                    # Capture original image if we haven't already (Snapshot from Game File)
+                    if not original_image_copy and (preview_folder or reference_folder):
                         original_image_copy = data.image.copy()
+                        
+                        # Save this extracted image to Reference folder if specificed and missing
+                        if reference_folder:
+                             ref_path = join(reference_folder, f"{card_name}.png")
+                             if not exists(ref_path):
+                                 original_image_copy.save(ref_path)
+                                 print(f"[REFERENCE] Saved extracted reference to {ref_path}")
+                                 # Update our local reference to this new image for future use
+                                 reference_image = original_image_copy
 
                     data.m_Width, data.m_Height = user_image.size
                     data.set_image(
@@ -244,6 +293,7 @@ if __name__ == "__main__":
     parser.add_argument("-o", "--output", default="modded_assets", help="Directory to save modded assets (default: modded_assets)")
     parser.add_argument("-b", "--backup", help="Directory to save backups of original assets")
     parser.add_argument("-p", "--preview", help="Directory to save side-by-side preview images")
+    parser.add_argument("-r", "--reference", help="Directory containing reference (original) card art")
     parser.add_argument("--compress-preview", action="store_true", help="Compress preview images using PNG8 (256 colors)")
 
     if len(sys.argv) == 1:
@@ -271,5 +321,5 @@ if __name__ == "__main__":
             print("Preview Compression: Enabled (PNG8)")
     print(f"Game Data Source: {APP_CONFIG.game_path}")
 
-    process_card_conversion(args.input_dir, args.output, args.backup, args.preview, args.compress_preview)
+    process_card_conversion(args.input_dir, args.output, args.backup, args.preview, args.compress_preview, args.reference)
     print("Done.")
