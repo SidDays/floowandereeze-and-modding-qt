@@ -1,4 +1,5 @@
 import logging
+from os.path import join
 import re
 from typing import Optional
 from PySide6.QtCore import Qt, QSize, QSettings, QTimer
@@ -500,8 +501,13 @@ class Card(ResponsivePageMixin, QWidget, Ui_Card):
             if self.selected.modded_name
             else ""
         )
+        bundle_path = (
+            join(self.selected.bundle[:2], self.selected.bundle)
+            if self.selected.bundle and len(self.selected.bundle) >= 2
+            else (self.selected.bundle or "")
+        )
         self._set_editor_context(
-            f"Editing {self.model.assets[index.row()].name} {modded_name}({self.selected.bundle})"
+            f"Editing {self.model.assets[index.row()].name} {modded_name}({bundle_path})"
         )
 
         self.replaceButton.setEnabled(True)
