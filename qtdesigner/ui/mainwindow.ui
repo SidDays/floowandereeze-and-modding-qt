@@ -16,6 +16,12 @@
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>960</width>
+    <height>540</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
@@ -41,7 +47,7 @@
     background-color: rgba(12, 12, 12, 0.7);
  }</string>
   </property>
-  <widget class="QWidget" name="centralwidget">
+  <widget class="CoverBackgroundWidget" name="centralwidget">
    <property name="sizePolicy">
     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
      <horstretch>0</horstretch>
@@ -66,6 +72,12 @@ QPushButton:hover {
      <widget class="QStackedWidget" name="mainStack">
       <property name="enabled">
        <bool>true</bool>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
       <property name="styleSheet">
        <string notr="true"/>
@@ -96,6 +108,9 @@ QPushButton:hover {
      <height>36</height>
     </size>
    </property>
+   <property name="toolButtonStyle">
+    <enum>Qt::ToolButtonTextUnderIcon</enum>
+   </property>
    <property name="floatable">
     <bool>false</bool>
    </property>
@@ -108,6 +123,7 @@ QPushButton:hover {
    <addaction name="actionconfig_button"/>
    <addaction name="actionsleeve_button"/>
    <addaction name="actioncard_button"/>
+   <addaction name="actioncard_icon_button"/>
    <addaction name="actionface_button"/>
    <addaction name="actionbackground_button"/>
    <addaction name="actionicon_button"/>
@@ -121,7 +137,10 @@ QPushButton:hover {
      <normaloff>:/ui/images/gear.png</normaloff>:/ui/images/gear.png</iconset>
    </property>
    <property name="text">
-    <string>config button</string>
+    <string>Configuration</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
@@ -133,7 +152,10 @@ QPushButton:hover {
      <normaloff>:/card/images/sleeve.png</normaloff>:/card/images/sleeve.png</iconset>
    </property>
    <property name="text">
-    <string>sleeve button</string>
+    <string>Sleeves</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
@@ -145,7 +167,10 @@ QPushButton:hover {
      <normaloff>:/ui/images/icon.png</normaloff>:/ui/images/icon.png</iconset>
    </property>
    <property name="text">
-    <string>card button</string>
+    <string>Cards</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
@@ -157,10 +182,13 @@ QPushButton:hover {
      <normaloff>:/card/images/token.png</normaloff>:/card/images/token.png</iconset>
    </property>
    <property name="text">
-    <string>face button</string>
+    <string>Faces</string>
    </property>
    <property name="toolTip">
-    <string>face button</string>
+    <string>Faces</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
@@ -172,10 +200,13 @@ QPushButton:hover {
      <normaloff>:/ui/images/bg.png</normaloff>:/ui/images/bg.png</iconset>
    </property>
    <property name="text">
-    <string>background button</string>
+    <string>Background</string>
    </property>
    <property name="toolTip">
-    <string>background button</string>
+    <string>Background</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
@@ -187,10 +218,13 @@ QPushButton:hover {
      <normaloff>:/ui/images/player.png</normaloff>:/ui/images/player.png</iconset>
    </property>
    <property name="text">
-    <string>icon button</string>
+    <string>Icons</string>
    </property>
    <property name="toolTip">
-    <string>icon button</string>
+    <string>Icons</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
@@ -202,10 +236,13 @@ QPushButton:hover {
      <normaloff>:/ui/images/field_icon.png</normaloff>:/ui/images/field_icon.png</iconset>
    </property>
    <property name="text">
-    <string>field button</string>
+    <string>Fields</string>
    </property>
    <property name="toolTip">
-    <string>field button</string>
+    <string>Fields</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
@@ -217,10 +254,31 @@ QPushButton:hover {
      <normaloff>:/ui/images/wallpaper.png</normaloff>:/ui/images/wallpaper.png</iconset>
    </property>
    <property name="text">
-    <string>wallpaper button</string>
+    <string>Wallpapers</string>
    </property>
    <property name="toolTip">
-    <string>wallpaper button</string>
+    <string>Wallpapers</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::MenuRole::NoRole</enum>
+   </property>
+  </action>
+  <action name="actioncard_icon_button">
+   <property name="icon">
+    <iconset resource="../resources.qrc">
+     <normaloff>:/ui/images/card_icon.png</normaloff>:/ui/images/card_icon.png</iconset>
+   </property>
+   <property name="text">
+    <string>Card Icons</string>
+   </property>
+   <property name="toolTip">
+    <string>Card Icons</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
@@ -232,16 +290,26 @@ QPushButton:hover {
      <normaloff>:/ui/images/coin.png</normaloff>:/ui/images/coin.png</iconset>
    </property>
    <property name="text">
-    <string>coin button</string>
+    <string>Coins</string>
    </property>
    <property name="toolTip">
-    <string>coin button</string>
+    <string>Coins</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="menuRole">
     <enum>QAction::MenuRole::NoRole</enum>
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CoverBackgroundWidget</class>
+   <extends>QWidget</extends>
+   <header>widgets.cover_background</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources.qrc"/>
  </resources>

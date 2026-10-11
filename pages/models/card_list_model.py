@@ -5,10 +5,11 @@ from PySide6.QtGui import Qt
 from typing_extensions import override
 from sqlalchemy import or_
 
-from database.models import CardModel
+from database.models import CardModel, CardOcgModel
 from database.objects import session
 from pages.models.asset_list_model import AssetListModel
 from unity.unity_utils import fetch_bundle_thumb
+from util.constants import APP_CONFIG
 
 
 class CardListModel(AssetListModel):
@@ -21,6 +22,7 @@ class CardListModel(AssetListModel):
 
     @override
     def refresh(self):
+        self.db_model = CardOcgModel if APP_CONFIG.asset_region == "ocg" else CardModel
         query = session.query(self.db_model)
 
         if self.filter != "" and not self.show_favorites:
@@ -61,10 +63,13 @@ class CardListModel(AssetListModel):
         if role == Qt.DisplayRole:
             return shorten(
                 self.assets[index.row()].name,
-                width=20,
+                width=32,
                 placeholder="...",
                 replace_whitespace=False,
             )
+
+        if role == Qt.ToolTipRole:
+            return self.assets[index.row()].name
 
         if role == Qt.DecorationRole:
             return self.assets[index.row()].thumb

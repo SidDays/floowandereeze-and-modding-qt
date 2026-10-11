@@ -1,11 +1,12 @@
 from typing import Optional
 
 from PySide6 import QtWidgets
-from PySide6.QtGui import QPixmap, QDragEnterEvent, QDropEvent
+from PySide6.QtGui import QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import QFileDialog
 from pyqttoast import ToastPreset
 
 from database.models import FaceModel
+from pages.base_responsive_page import ResponsivePageMixin
 from pages.models.face_list_model import FaceListModel
 from pages.ui.face import Ui_Face
 from services.face_service import FaceService
@@ -13,17 +14,45 @@ from unity.unity_utils import fetch_unity3d_image
 from util.constants import IMAGE_FILTER, APP_CONFIG
 from util.image_utils import slugify
 from util.ui_util import show_toast
+from widgets.ux import configure_editor_chrome, hide_selection_helper, set_button_roles
+from widgets.image_fit import InlineImageFitController
 
 
-class Face(QtWidgets.QWidget, Ui_Face):
+class Face(ResponsivePageMixin, QtWidgets.QWidget, Ui_Face):
     def __init__(self):
-        super(Face, self).__init__()
+        QtWidgets.QWidget.__init__(self)
+        ResponsivePageMixin.__init__(self)
         self.setupUi(self)
+
+        # Configure responsive images with aspect ratio
+        self.setup_responsive_images(
+            self.current,
+            self.preview,
+            aspect_ratio=(256, 375),
+            max_image_size=250,
+            min_image_size=64,
+        )
 
         self.service = FaceService()
         self.model = FaceListModel()
         self.facesView.setModel(self.model)
         self.selected: Optional[FaceModel] = None
+        configure_editor_chrome(
+            self,
+            current_widget=self.current,
+            preview_widget=self.preview,
+            file_edits=(self.assetEdit,),
+            list_views=(self.facesView,),
+            helper_after=self.bundle,
+        )
+        self.image_fit = InlineImageFitController(
+            self,
+            self.preview,
+            (256, 375),
+            lambda image_path: setattr(self.service, "image_path", image_path),
+            alignment_widget=self.current,
+        )
+        set_button_roles(self)
 
         # Enable drag and drop
         self.setAcceptDrops(True)
@@ -49,10 +78,13 @@ class Face(QtWidgets.QWidget, Ui_Face):
         for url in event.mimeData().urls():
             file_path = url.toLocalFile()
             if file_path.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".gif")):
-                self.assetEdit.setText(file_path)
-                self.preview.setPixmap(QPixmap(file_path))
-                self.service.image_path = file_path
+                self._set_image(file_path)
                 break
+
+    def _set_image(self, file_path: str) -> None:
+        if not self.image_fit.set_source(file_path):
+            return
+        self.assetEdit.setText(file_path)
 
     def _connect_callbacks(self) -> None:
         self.facesView.clicked.connect(self._on_face_clicked)
@@ -78,15 +110,16 @@ class Face(QtWidgets.QWidget, Ui_Face):
     def _on_face_clicked(self, index) -> None:
         self.selected = self.model.assets[index.row()]
 
-        self.current.setPixmap(
-            fetch_unity3d_image(self.selected.key, (256, 375)).pixmap(256, 375)
-        )
-        self.service.bundle = self.selected.key
+        icon = fetch_unity3d_image(self.selected.key, (256, 375))
+        if icon:
+            self.current.setPixmap(icon.pixmap(256, 375))
+        self.service.key = self.selected.key
         self.bundle.setText(f"Editing {self.selected.name} ({self.selected.key})")
 
         self.replaceButton.setEnabled(True)
         self.extractButton.setEnabled(True)
         self.restoreButton.setEnabled(True)
+        hide_selection_helper(self)
 
     def _select_image(self) -> None:
         file, _ = QFileDialog.getOpenFileUrl(self, "Select Image", "", IMAGE_FILTER)
@@ -94,12 +127,10 @@ class Face(QtWidgets.QWidget, Ui_Face):
         if file and file.url() != "":
             local_file = file.toLocalFile()
 
-            self.assetEdit.setText(local_file)
-            self.preview.setPixmap(QPixmap(local_file))
-            self.service.image_path = local_file
+            self._set_image(local_file)
 
     def _extract_texture(self) -> None:
-        self.service.extract_texture(self.service.bundle)
+        self.service.extract_texture(self.service.key)
         show_toast(
             self,
             "Face Extraction",
@@ -114,9 +145,9 @@ class Face(QtWidgets.QWidget, Ui_Face):
 
         self.service.replace_bundle()
         self.model.refresh()
-        self.current.setPixmap(
-            fetch_unity3d_image(self.service.bundle, (256, 375)).pixmap(256, 375)
-        )
+        icon = fetch_unity3d_image(self.service.key, (256, 375))
+        if icon:
+            self.current.setPixmap(icon.pixmap(256, 375))
 
         show_toast(
             self, "Face", "Card Face replacement successful", ToastPreset.SUCCESS_DARK

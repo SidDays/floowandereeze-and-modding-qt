@@ -48,13 +48,14 @@ class AppConfig(base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     mipmap_count: Mapped[int] = mapped_column(Integer, default=10)
-    game_path: Mapped[str] = mapped_column(String(610))
+    game_path: Mapped[str] = mapped_column(String(610), nullable=True)
     background_path: Mapped[str] = mapped_column(String(610), nullable=True)
     version: Mapped[str] = mapped_column(String(100), nullable=True)
     crypto_key: Mapped[str] = mapped_column(String(100), nullable=True)
     packer: Mapped[str] = mapped_column(String(5), default="LZ4")
     create_backup: Mapped[bool] = mapped_column(Boolean, default=False)
     background_mode: Mapped[str] = mapped_column(String(10), default="stretched")
+    asset_region: Mapped[str] = mapped_column(String(3), default="tcg")
 
 
 class SleeveModel(UnityAsset, base):
@@ -67,6 +68,15 @@ class SleeveModel(UnityAsset, base):
     """
 
     __tablename__ = "sleeve"
+
+    bundle: Mapped[str] = mapped_column(String(8), unique=True)
+    thumb: QIcon = QIcon()
+
+
+class SleeveOcgModel(UnityAsset, base):
+    """OCG counterpart to :class:`SleeveModel`."""
+
+    __tablename__ = "sleeve_ocg"
 
     bundle: Mapped[str] = mapped_column(String(8), unique=True)
     thumb: QIcon = QIcon()
@@ -91,6 +101,21 @@ class CardModel(UnityAsset, base):
     bundle: Mapped[str] = mapped_column(String(8), unique=True)
     modded_name: Mapped[bool] = mapped_column(String(255), nullable=True)
     modded_description: Mapped[bool] = mapped_column(String(255), nullable=True)
+    data_index: Mapped[int] = mapped_column(Integer)
+    unity_file: ClassVar[bool] = False
+    thumb: QIcon = QIcon()
+
+
+class CardOcgModel(UnityAsset, base):
+    """OCG counterpart to :class:`CardModel`."""
+
+    __tablename__ = "card_ocg"
+
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(String(255))
+    bundle: Mapped[str] = mapped_column(String(8), unique=True)
+    modded_name: Mapped[str] = mapped_column(String(255), nullable=True)
+    modded_description: Mapped[str] = mapped_column(String(255), nullable=True)
     data_index: Mapped[int] = mapped_column(Integer)
     unity_file: ClassVar[bool] = False
     thumb: QIcon = QIcon()
@@ -129,10 +154,10 @@ class CardIconModel(UnityAsset, base):
     __tablename__ = "card_icon"
 
     name: Mapped[str] = mapped_column(String(255))
-    width: ClassVar[int]
-    height: ClassVar[int]
-    atlas_x: ClassVar[int]
-    atlas_y: ClassVar[int]
+    width: Mapped[int] = mapped_column(Integer)
+    height: Mapped[int] = mapped_column(Integer)
+    x: Mapped[int] = mapped_column(Integer)
+    y: Mapped[int] = mapped_column(Integer)
     thumb: QIcon = QIcon()
 
 
@@ -233,17 +258,18 @@ class DeckBoxModel(UnityAsset, base):
 
 class CoinModel(UnityAsset, base):
     """
-    Model for interface metadata.
+    Model for coin assets.
 
-    Stores information about interface elements including:
-    - bundle: Bundle identifier
-    - name: Name of the interface element
-    - asset_name: Name of the asset within the bundle
+    Coins use the same three-resolution bundle layout as player icons.
     """
 
-    __tablename__ = "interface_metadata"
+    __tablename__ = "coin"
 
-    bundle: Mapped[str] = mapped_column(String(8))
+    name: Mapped[str] = mapped_column(String(255), unique=True)
+    bundle_small: Mapped[str] = mapped_column(String(8), unique=True)
+    bundle_medium: Mapped[str] = mapped_column(String(8), unique=True)
+    bundle_big: Mapped[str] = mapped_column(String(8), unique=True)
+    thumb: QIcon = QIcon()
 
 
 base.metadata.create_all(engine)

@@ -11,6 +11,8 @@ from unity.unity_utils import fetch_bundle_thumb
 from util.constants import IMAGE_FILTER, APP_CONFIG
 from util.ui_util import show_toast
 from widgets.image_viewer import ImageViewer
+from widgets.ux import configure_editor_chrome, hide_selection_helper, set_button_roles
+from widgets.image_fit import InlineImageFitController
 
 
 class Wallpaper(QtWidgets.QWidget, Ui_Wallpaper):
@@ -23,10 +25,30 @@ class Wallpaper(QtWidgets.QWidget, Ui_Wallpaper):
         self.wallpaperView.setModel(self.model)
         self.selected = None
         self.image = None
+        self.wallpaper_size = None
         self.preview = ImageViewer(
             QPixmap.fromImage(QImage(":ui/images/wallpaper_preview.png"))
         )
         self.main_content.addWidget(self.preview)
+        configure_editor_chrome(
+            self,
+            current_widget=self.preview,
+            current_title="Selected Asset",
+            file_edits=(self.wallpaperEdit,),
+            list_views=(self.wallpaperView,),
+            helper_after=self.bundle,
+        )
+        self.image_fit = InlineImageFitController(
+            self,
+            self.preview,
+            lambda: (
+                (self.wallpaper_size.width(), self.wallpaper_size.height())
+                if self.wallpaper_size
+                else (0, 0)
+            ),
+            lambda image_path: setattr(self.service, "image_path", image_path),
+        )
+        set_button_roles(self)
 
         # Enable drag and drop
         self.setAcceptDrops(True)
@@ -52,9 +74,21 @@ class Wallpaper(QtWidgets.QWidget, Ui_Wallpaper):
         for url in event.mimeData().urls():
             file_path = url.toLocalFile()
             if file_path.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".gif")):
-                self.wallpaperEdit.setText(file_path)
-                self.service.image_path = file_path
+                self._set_image(file_path)
                 break
+
+    def _set_image(self, file_path: str) -> None:
+        if not self.wallpaper_size:
+            show_toast(
+                self,
+                "Wallpaper",
+                "Select a wallpaper before choosing its replacement image",
+                ToastPreset.WARNING_DARK,
+            )
+            return
+        if not self.image_fit.set_source(file_path):
+            return
+        self.wallpaperEdit.setText(file_path)
 
     def _restore(self):
         if self.service.restore_asset():
@@ -82,9 +116,11 @@ class Wallpaper(QtWidgets.QWidget, Ui_Wallpaper):
         self.selected = self.model.assets[index.row()]
         self.image = fetch_bundle_thumb(self.selected.bundle_foreground, None)
         size = self.image.availableSizes()[0]
+        self.wallpaper_size = size
         self.preview.setPixmap(
             self.image.pixmap(self.image.actualSize(QSize(600, 900)))
         )
+        self.image_fit.refresh_target_size()
         self.service.bundle = self.selected
         self.bundle.setText(
             f"Editing {self.selected.name} "
@@ -96,6 +132,7 @@ class Wallpaper(QtWidgets.QWidget, Ui_Wallpaper):
         self.extractButton.setEnabled(True)
         self.restoreButton.setEnabled(True)
         self.copyButton.setEnabled(True)
+        hide_selection_helper(self)
 
     def _select_image(self):
         file, _ = QFileDialog.getOpenFileUrl(self, "Select Image", "", IMAGE_FILTER)
@@ -103,8 +140,7 @@ class Wallpaper(QtWidgets.QWidget, Ui_Wallpaper):
         if file and file.url() != "":
             local_file = file.toLocalFile()
 
-            self.wallpaperEdit.setText(local_file)
-            self.service.image_path = local_file
+            self._set_image(local_file)
 
     def _copy(self):
         self.service.copy_bundle()

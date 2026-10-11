@@ -1,11 +1,14 @@
 .\build_qt.ps1
 
-pyinstaller `
+& python -m PyInstaller `
+    --clean `
     --onefile `
     --noconsole `
     --icon "./qtdesigner/images/icon.ico" `
-    --add-data "C:\hostedtoolcache\windows\Python\3.11.9\x64\Lib\site-packages\UnityPy;UnityPy/" `
-    --add-data "pages/ui;pages/ui/" `
+    --collect-all "UnityPy" `
+    --collect-binaries "fmod_toolkit" `
+    --collect-data "archspec" `
     --hidden-import "fastparquet" `
+    --hidden-import "numpy._core._exceptions" `
     --name "Floowandereeze & Modding" `
     .\main.py
