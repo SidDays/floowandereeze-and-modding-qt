@@ -85,8 +85,18 @@ class UnityService(ABC):
                     found = True
 
                 if found:
-                    makedirs(join(folder, self.subfolder), exist_ok=True)
-                    dest = join(folder, self.subfolder, slugify(name) + ".png")
+                    subfolder_prefix = (
+                        self.bundle[:2]
+                        if folder != "backups" and self.bundle and len(self.bundle) >= 2
+                        else ""
+                    )
+                    target_dir = (
+                        join(folder, self.subfolder, subfolder_prefix)
+                        if subfolder_prefix
+                        else join(folder, self.subfolder)
+                    )
+                    makedirs(target_dir, exist_ok=True)
+                    dest = join(target_dir, slugify(name) + ".png")
 
                     img = data.image
                     img.save(dest)
@@ -127,9 +137,19 @@ class UnityService(ABC):
         :return: None
         """
 
-        makedirs(join(folder, self.subfolder), exist_ok=True)
+        subfolder_prefix = (
+            self.bundle[:2]
+            if self.bundle and len(self.bundle) >= 2
+            else ""
+        )
+        target_dir = (
+            join(folder, self.subfolder, subfolder_prefix)
+            if subfolder_prefix
+            else join(folder, self.subfolder)
+        )
+        makedirs(target_dir, exist_ok=True)
 
         copyfile(
             join(APP_CONFIG.game_path, "0000", self.bundle[:2], self.bundle),
-            join(folder, self.subfolder, self.bundle),
+            join(target_dir, self.bundle),
         )

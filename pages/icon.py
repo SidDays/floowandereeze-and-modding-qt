@@ -21,6 +21,7 @@ from pages.ui.icon import Ui_Icon
 from services.icon_service import IconService
 from unity.unity_utils import fetch_bundle_thumb
 from util.constants import IMAGE_FILTER, APP_CONFIG
+from util.python_utils import format_bundle_path
 from util.ui_util import show_toast
 from widgets.ux import configure_editor_chrome, hide_selection_helper, set_button_roles
 from widgets.image_fit import InlineImageFitController
@@ -306,7 +307,7 @@ class Icon(ResponsivePageMixin, QtWidgets.QWidget, Ui_Icon):
         )
         self.service.bundle = self.selected
         self._set_editor_context(
-            f"Editing {self.model.assets[index.row()].name} (S: {self.selected.bundle_small} M: {self.selected.bundle_medium} B: {self.selected.bundle_big})"
+            f"Editing {self.model.assets[index.row()].name} (S: {format_bundle_path(self.selected.bundle_small)} M: {format_bundle_path(self.selected.bundle_medium)} B: {format_bundle_path(self.selected.bundle_big)})"
         )
         self.replaceButton.setEnabled(True)
         self.extractButton.setEnabled(True)

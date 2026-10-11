@@ -30,7 +30,7 @@ from pages.ui.card import Ui_Card
 from services.card_service import CardService
 from unity.unity_utils import fetch_bundle_thumb
 from util.constants import IMAGE_FILTER, APP_CONFIG
-from util.python_utils import remove_alt_tags
+from util.python_utils import remove_alt_tags, format_bundle_path
 from util.ui_util import show_toast
 from widgets.ux import configure_editor_chrome, hide_selection_helper, set_button_roles
 from widgets.image_fit import InlineImageFitController
@@ -501,11 +501,7 @@ class Card(ResponsivePageMixin, QWidget, Ui_Card):
             if self.selected.modded_name
             else ""
         )
-        bundle_path = (
-            join(self.selected.bundle[:2], self.selected.bundle)
-            if self.selected.bundle and len(self.selected.bundle) >= 2
-            else (self.selected.bundle or "")
-        )
+        bundle_path = format_bundle_path(self.selected.bundle)
         self._set_editor_context(
             f"Editing {self.model.assets[index.row()].name} {modded_name}({bundle_path})"
         )

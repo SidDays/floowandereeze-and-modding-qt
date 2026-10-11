@@ -22,6 +22,7 @@ from pages.ui.sleeve import Ui_Sleeve
 from services.sleeve_service import SleeveService
 from unity.unity_utils import fetch_bundle_thumb
 from util.constants import IMAGE_FILTER, APP_CONFIG
+from util.python_utils import format_bundle_path
 from util.ui_util import show_toast
 from widgets.ux import configure_editor_chrome, hide_selection_helper, set_button_roles
 from widgets.image_fit import InlineImageFitController
@@ -379,7 +380,7 @@ class Sleeve(ResponsivePageMixin, QtWidgets.QWidget, Ui_Sleeve):
             fetch_bundle_thumb(self.selected.bundle, (256, 375)).pixmap(256, 375)
         )
         self.service.bundle = self.selected.bundle
-        self._set_editor_context(f"Editing {self.selected.bundle}")
+        self._set_editor_context(f"Editing {format_bundle_path(self.selected.bundle)}")
 
         self.replaceButton.setEnabled(True)
         self.extractButton.setEnabled(True)

@@ -262,3 +262,11 @@ def max_ratio_within_limit(numbers: tuple[int, int], limit: int) -> tuple[int, i
         return int(scaled_smaller), int(scaled_larger)
     else:
         return int(scaled_larger), int(scaled_smaller)
+
+
+def format_bundle_path(bundle: str | None) -> str:
+    """Format bundle with its 2-character subfolder prefix (e.g. '15\\1592c20d')."""
+    if bundle and len(bundle) >= 2:
+        return join(bundle[:2], bundle)
+    return bundle or ""
+

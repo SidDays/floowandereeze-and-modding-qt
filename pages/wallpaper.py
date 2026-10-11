@@ -9,6 +9,7 @@ from pages.ui.wallpaper import Ui_Wallpaper
 from services.wallpaper_service import WallpaperService
 from unity.unity_utils import fetch_bundle_thumb
 from util.constants import IMAGE_FILTER, APP_CONFIG
+from util.python_utils import format_bundle_path
 from util.ui_util import show_toast
 from widgets.image_viewer import ImageViewer
 from widgets.ux import configure_editor_chrome, hide_selection_helper, set_button_roles
@@ -124,7 +125,7 @@ class Wallpaper(QtWidgets.QWidget, Ui_Wallpaper):
         self.service.bundle = self.selected
         self.bundle.setText(
             f"Editing {self.selected.name} "
-            f"(F: {self.selected.bundle_foreground} B: {self.selected.bundle_background}) |"
+            f"(F: {format_bundle_path(self.selected.bundle_foreground)} B: {format_bundle_path(self.selected.bundle_background)}) |"
             f" Size: {size.width()}x{size.height()}px"
         )
 
