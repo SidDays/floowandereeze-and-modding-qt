@@ -116,8 +116,16 @@ def process_card_conversion(input_folder: str, output_folder: str, backup_folder
         card = resolve_card(name_without_ext, card_map)
         
         if not card:
-            print(f"[SKIP] Could not resolve card for file: {filename}")
-            continue
+            print(f"[NOT FOUND] Could not resolve card for file: {filename}")
+            manual_name = input(f"Enter correct card name for '{filename}' (or ENTER to skip): ").strip()
+            if manual_name:
+                card = resolve_card(manual_name, card_map)
+                if not card:
+                    print(f"[SKIP] Still could not resolve card for input: {manual_name}")
+                    continue
+            else:
+                print(f"[SKIP] Skipping {filename}")
+                continue
             
         bundle_name = card.bundle
         card_name = card.name
